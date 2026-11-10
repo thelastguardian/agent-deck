@@ -49,14 +49,16 @@ var (
 )
 
 // foreignWritableReason returns "" when info is owned by the current user
-// and nobody else can write it, otherwise a short reason naming why not.
+// or root and nobody else can write it, otherwise a short reason naming why
+// not. Root can write any file anyway, so a root-owned file (a read-only Nix
+// store link, a file under /etc) gives nobody else control.
 func foreignWritableReason(info os.FileInfo) string {
 	st, ok := info.Sys().(*syscall.Stat_t)
 	if !ok {
 		return "owner unknown"
 	}
 	uid := permTrustUID()
-	if int(st.Uid) != uid {
+	if int(st.Uid) != uid && st.Uid != 0 {
 		return fmt.Sprintf("owned by uid %d, not %d", st.Uid, uid)
 	}
 	perm := info.Mode().Perm()

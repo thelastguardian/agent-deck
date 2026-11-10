@@ -172,6 +172,37 @@ func TestUserConfigPerms_ForeignOwnerWarns(t *testing.T) {
 	}
 }
 
+// A root-owned config.toml nobody else can write (home-manager and
+// nix-darwin link it read-only into the Nix store) gives nobody but root
+// control, and root can write any file anyway, so it is trusted without a
+// warning. Root-owned but world-writable, or owned by another user, is not.
+// statInfo (spawn_path_test.go) stands in for an owner a test cannot chown to.
+func TestForeignWritableReason_RootOwnedReadOnlyTrusted(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if err := os.WriteFile(path, nil, 0o444); err != nil {
+		t.Fatal(err)
+	}
+	stat := func() os.FileInfo {
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return info
+	}
+	if r := foreignWritableReason(statInfo{stat(), 0}); r != "" {
+		t.Fatalf("root-owned 0444 file: reason %q, want trusted", r)
+	}
+	if r := foreignWritableReason(statInfo{stat(), uint32(os.Getuid() + 4242)}); r == "" {
+		t.Fatalf("file owned by another user was trusted")
+	}
+	if err := os.Chmod(path, 0o666); err != nil {
+		t.Fatal(err)
+	}
+	if r := foreignWritableReason(statInfo{stat(), 0}); r == "" {
+		t.Fatalf("root-owned world-writable file was trusted")
+	}
+}
+
 func TestUserConfigPerms_PrivateFileNoWarning(t *testing.T) {
 	setupDirLocalHome(t)
 	buf := withPermWarnings(t)

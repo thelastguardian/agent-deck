@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -72,6 +73,12 @@ var hermesHookEvents = []string{
 	"on_session_start",
 	"on_session_end",
 	"on_session_finalize",
+}
+
+// IsHermesHookEvent reports whether event is one of the Hermes lifecycle
+// events agent-deck subscribes to.
+func IsHermesHookEvent(event string) bool {
+	return slices.Contains(hermesHookEvents, event)
 }
 
 var hermesLegacyHookEvents = []string{"pre_tool_call", "post_tool_call", "on_session_start", "on_session_end"}

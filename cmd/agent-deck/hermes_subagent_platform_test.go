@@ -27,6 +27,7 @@ func TestHookHandlerRecordsHermesExtraPlatform(t *testing.T) {
 			t.Setenv("HOME", t.TempDir())
 			id := "hermes-platform-1"
 			t.Setenv("AGENTDECK_INSTANCE_ID", id)
+			t.Setenv("AGENTDECK_TOOL", "hermes")
 			t.Setenv("AGENTDECK_HOOK_GENERATION", "")
 			payload := map[string]any{
 				"hook_event_name": "pre_llm_call",

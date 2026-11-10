@@ -396,6 +396,14 @@ func handleHookHandlerReceivedAt(receivedAt time.Time) {
 		logBgWorkerHookDropOnce(instanceID, bgSessionID, payload.HookEventName)
 		return
 	}
+	// A Hermes process started inside another tool's pane (a Claude session
+	// running `hermes -z`) inherits that pane's AGENTDECK_INSTANCE_ID and
+	// cwd, so #1729's cwd evidence cannot reject it. Every Hermes launch
+	// exports AGENTDECK_TOOL=hermes (buildHermesCommand); without it the
+	// instance is not a Hermes session and its status is not ours to write.
+	if session.IsHermesHookEvent(payload.HookEventName) && os.Getenv("AGENTDECK_TOOL") != "hermes" {
+		return
+	}
 	// Agent activity tracing (ASK-129): one redacted spool line, no SQLite,
 	// errors ignored; a no-op unless [trace] level / AGENTDECK_TRACE is on.
 	// Before the PreToolUse sync gate: tracing records every tool edge it is

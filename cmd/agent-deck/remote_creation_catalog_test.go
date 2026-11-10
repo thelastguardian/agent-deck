@@ -55,6 +55,31 @@ func TestOpenCode2RemoteCreationCatalog(t *testing.T) {
 	t.Fatal("remote catalog has no opencode2 launcher")
 }
 
+// A remote TUI's New Session dialog offers the tools the remote's catalog
+// lists, so the catalog must carry every built-in the local dialog offers
+// (internal/ui buildPresetCommands). omp and muse were missing, so a session
+// created on a remote host could not pick either.
+func TestRemoteCreationCatalogOffersLocalBuiltins(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("XDG_CONFIG_HOME", "")
+	t.Setenv("XDG_DATA_HOME", "")
+	session.ClearUserConfigCache()
+	t.Cleanup(session.ClearUserConfigCache)
+	catalog, err := buildCreationCatalog("default")
+	if err != nil {
+		t.Fatal(err)
+	}
+	offered := map[string]bool{}
+	for _, tool := range catalog.Tools {
+		offered[tool.Name] = true
+	}
+	for _, name := range []string{"", "claude", "gemini", "opencode", "opencode2", "codex", "pi", "copilot", "crush", "muse", "cursor", "hermes", "deepseek", "omp"} {
+		if !offered[name] {
+			t.Errorf("remote creation catalog lacks built-in %q", name)
+		}
+	}
+}
+
 func TestRemoteCreationFlagTypes(t *testing.T) {
 	fs := flag.NewFlagSet("fixture", flag.ContinueOnError)
 	fs.Bool("enabled", false, "")
